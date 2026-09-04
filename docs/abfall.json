@@ -1,9 +1,7 @@
 {
-  "generated_at": "2026-09-04T14:20:17+02:00",
+  "generated_at": "2026-09-04T20:46:14+02:00",
   "date_for": "2026-09-05",
   "types": [],
-  "next_pickup_date": "2026-09-09",
-  "next_types": [
-    "restmuell"
-  ]
+  "next_pickup_date": null,
+  "next_types": []
 }
