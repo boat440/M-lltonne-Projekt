@@ -1,0 +1,7 @@
+# ESP32-Firmware bleibt bewusst nur lokal, nicht in diesem oeffentlichen Repo
+# (siehe README) -- falls du sie doch versionieren willst, nimm ein privates Repo.
+firmware/
+
+# Python-Cache
+__pycache__/
+*.pyc

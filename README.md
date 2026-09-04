@@ -1,18 +1,20 @@
 # Mülltonne mit Anzeige – Projektübersicht
 
 ```
-muelltonne-projekt/
+muelltonne-projekt/               # <- das hier ist das oeffentliche GitHub-Repo
 ├── .github/workflows/
 │   └── update-abfallkalender.yml   # läuft täglich, holt Kalender, schreibt JSON
 ├── cloud-script/
 │   ├── fetch_abfallkalender.py     # Python-Skript: ICS holen -> JSON schreiben
+│   ├── local_config.py.example     # Vorlage fuer die lokale Adress-Config
 │   └── requirements.txt
 ├── docs/
 │   └── abfall.json                 # wird automatisch überschrieben, via GitHub Pages ausgeliefert
-├── firmware/                       # ESP32-Firmware (eigenes PlatformIO-Projekt)
-│   ├── platformio.ini
-│   └── src/main.cpp
 └── README.md
+
+firmware/                         # <- NICHT im GitHub-Repo, rein lokal!
+├── platformio.ini
+└── src/main.cpp
 ```
 
 Das Ganze sind bewusst **zwei getrennte Bereiche**, die du auch als zwei
@@ -20,19 +22,38 @@ separate VS-Code-Fenster/Ordner öffnen kannst:
 
 - **cloud-script/** + **.github/** + **docs/** → gehört zu einem GitHub-Repository,
   läuft komplett in der Cloud (GitHub Actions), du musst dafür nichts selbst hosten.
-- **firmware/** → ein eigenständiges PlatformIO-Projekt für den ESP32.
+- **firmware/** → ein eigenständiges PlatformIO-Projekt für den ESP32, bleibt
+  bewusst **nur lokal auf deinem Rechner** (kein GitHub nötig, GitHub Actions/Pages
+  brauchen es nie). Falls du es doch versionieren willst, nimm dafür ein
+  **privates** Repo, nicht dasselbe öffentliche wie den Cloud-Teil.
+
+⚠️ **Datenschutz**: Das GitHub-Repo muss öffentlich sein (kostenlose GitHub
+Pages verlangen das). `ORTE_ID`/`STRASSEN_ID`/`HAUSNUMMER` identifizieren
+eindeutig deine Adresse und dürfen deshalb **nicht** im Code stehen – sie
+kommen aus GitHub Actions Secrets (Cloud) bzw. `local_config.py` (lokal,
+gitignored). Committe niemals `debug_response_*.txt` – die rohe
+Server-Antwort enthält deine Adresse im Klartext.
 
 ## 1. Cloud-Teil einrichten (Python + GitHub Actions + GitHub Pages)
 
 1. Erstelle ein neues **GitHub-Repository** (öffentlich, sonst funktioniert
-   GitHub Pages nicht im kostenlosen Plan) und lade den gesamten Ordner
-   `muelltonne-projekt` hoch (bzw. `git init`, `git add .`, `git commit`, `git push`).
+   GitHub Pages nicht im kostenlosen Plan) und lade den Inhalt von
+   `cloud-script/`, `.github/`, `docs/` und `README.md` hoch (bzw. `git init`,
+   `git add .`, `git commit`, `git push`) – **nicht** den `firmware/`-Ordner.
 2. In den Repo-Einstellungen: **Settings → Pages → Source: Deploy from a branch →
    Branch: main, Ordner: /docs**. Speichern.
 3. Nach ein paar Minuten ist deine Datei erreichbar unter:
    `https://DEINUSERNAME.github.io/DEINREPO/abfall.json`
-4. Teste das Python-Skript lokal (optional, aber empfehlenswert), in VS Code:
+4. Adressdaten als **Repository Secrets** hinterlegen: **Settings → Secrets
+   and variables → Actions → New repository secret**, dreimal anlegen:
+   `ORTE_ID`, `STRASSEN_ID`, `HAUSNUMMER` (Werte aus der Netzwerk-Tab-URL,
+   siehe unten). Ohne diese Secrets bricht der Workflow mit einer klaren
+   Fehlermeldung ab.
+5. Teste das Python-Skript lokal (optional, aber empfehlenswert), in VS Code:
    - Python-Extension installieren, falls nicht vorhanden.
+   - `cloud-script/local_config.py.example` zu `cloud-script/local_config.py`
+     kopieren und dort deine echten Werte eintragen (wird per `.gitignore`
+     nicht committet).
    - Terminal in VS Code öffnen, in den Ordner `cloud-script` wechseln:
      ```bash
      cd cloud-script
@@ -40,12 +61,15 @@ separate VS-Code-Fenster/Ordner öffnen kannst:
      python fetch_abfallkalender.py
      ```
    - Prüfe die Ausgabe und den Inhalt von `docs/abfall.json`.
-5. In `.github/workflows/update-abfallkalender.yml` läuft das Skript danach
+6. In `.github/workflows/update-abfallkalender.yml` läuft das Skript danach
    automatisch jeden Tag (per `cron`) – du musst nichts weiter tun. Über den
    Reiter **Actions** im Repo kannst du es auch manuell per Klick auslösen
    ("Run workflow"), um sofort zu testen, ohne auf die Uhrzeit zu warten.
 
 ## 2. ESP32-Firmware einrichten (VS Code + PlatformIO)
+
+Dieser Teil bleibt lokal, siehe Hinweis oben – nichts davon muss (oder soll)
+ins öffentliche GitHub-Repo.
 
 1. Installiere die **PlatformIO IDE**-Extension in VS Code (Extensions-Icon →
    nach "PlatformIO IDE" suchen → installieren). VS Code startet danach neu.
@@ -77,12 +101,12 @@ separate VS-Code-Fenster/Ordner öffnen kannst:
 
 ## Wichtige Anpassungen für dein Setup
 
-- **Adressdaten**: `ORTE_ID`, `STRASSEN_ID`, `HAUSNUMMER` in
-  `fetch_abfallkalender.py` sind bereits mit deinen Werten aus der
-  Netzwerk-Tab-URL gefüllt – prüfe sie trotzdem einmal.
-- **Tonnenarten/Farben**: `WASTE_KEYWORDS` im Python-Skript und die
-  `if/else`-Kette in `applyTypes()` in `main.cpp` müssen zueinander passen
-  (gleiche Codes wie `"restmuell"`, `"gelber_sack"`, ...).
+- **Adressdaten**: `ORTE_ID`, `STRASSEN_ID`, `HAUSNUMMER` stehen bewusst
+  nicht mehr im Code, sondern in GitHub Actions Secrets (Cloud) bzw.
+  `cloud-script/local_config.py` (lokal) – siehe Schritt 1.4/1.5 oben.
+- **Tonnenarten/Farben**: `WASTE_KEYWORDS` im Python-Skript und `WASTE_DISPLAYS`
+  in `main.cpp` müssen zueinander passen (gleiche Codes wie `"restmuell"`,
+  `"gelber_sack"`, ...).
 - **Uhrzeit des täglichen Laufs**: der `cron`-Eintrag ist in UTC – wenn du z.B.
   willst, dass die Anzeige spätestens um 19 Uhr Ortszeit steht, probiere
   verschiedene `cron`-Werte aus (denk an Sommer-/Winterzeit).
@@ -91,7 +115,8 @@ separate VS-Code-Fenster/Ordner öffnen kannst:
 
 - Falls die Portal-API mal andere Parameter erwartet (z.B. sich `strassenId`
   ändert), einfach erneut über den Netzwerk-Tab die aktuelle URL prüfen und
-  die Konstanten in `fetch_abfallkalender.py` anpassen.
+  die Werte in `local_config.py` (lokal) bzw. den Repository Secrets
+  (GitHub Actions) anpassen.
 - `client.setInsecure()` in der Firmware überspringt die
   TLS-Zertifikatsprüfung. Für den privaten Gebrauch unkritisch, für mehr
   Sicherheit könntest du stattdessen das Root-Zertifikat von

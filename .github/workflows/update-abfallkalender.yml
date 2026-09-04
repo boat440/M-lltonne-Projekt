@@ -27,6 +27,10 @@ jobs:
         run: pip install -r cloud-script/requirements.txt
 
       - name: Kalender abrufen und JSON schreiben
+        env:
+          ORTE_ID: ${{ secrets.ORTE_ID }}
+          STRASSEN_ID: ${{ secrets.STRASSEN_ID }}
+          HAUSNUMMER: ${{ secrets.HAUSNUMMER }}
         run: python cloud-script/fetch_abfallkalender.py
 
       - name: Änderungen committen und pushen
