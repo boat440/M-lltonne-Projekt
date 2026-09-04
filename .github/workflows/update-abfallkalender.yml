@@ -1,0 +1,38 @@
+name: Abfallkalender aktualisieren
+
+on:
+  schedule:
+    # 16:00 UTC ≈ 18:00 Uhr MESZ / 17:00 Uhr MEZ.
+    # Läuft am Vortag abends, damit "morgen" schon feststeht, bevor
+    # der ESP32 nachts/morgens nachschaut.
+    - cron: "0 16 * * *"
+  workflow_dispatch: {} # erlaubt manuelles Auslösen über den "Run workflow"-Button
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Abhängigkeiten installieren
+        run: pip install -r cloud-script/requirements.txt
+
+      - name: Kalender abrufen und JSON schreiben
+        run: python cloud-script/fetch_abfallkalender.py
+
+      - name: Änderungen committen und pushen
+        run: |
+          git config user.name "abfallkalender-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/abfall.json
+          git diff --cached --quiet || git commit -m "Abfallkalender aktualisiert"
+          git push
