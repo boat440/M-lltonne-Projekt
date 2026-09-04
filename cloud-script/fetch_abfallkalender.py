@@ -8,7 +8,9 @@ Läuft lokal mit:  python fetch_abfallkalender.py
 Läuft automatisiert über den GitHub-Actions-Workflow (siehe .github/workflows).
 """
 
+import base64
 import json
+import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -27,18 +29,48 @@ HAUSNUMMER = "REDACTED"
 BASE_URL = "https://buerger-portal-oberursel.azurewebsites.net/api/ZeigeAbfallkalender"
 TIMEZONE = ZoneInfo("Europe/Berlin")
 
+# Diese Stichworte tauchen im Kalender auf, sind aber KEINE echten
+# Abholtermine, sondern nur Hinweise (z.B. Feiertag, Wertstoffhof
+# geschlossen) -> werden komplett ignoriert, statt als "sonstiges" gezählt.
+IGNORE_KEYWORDS = ["feiertag", "geschlossen"]
+
 # Zuordnung: Stichwort im Kalendereintrag (klein geschrieben) -> interner Code.
 # Diesen Code benutzt später die ESP32-Firmware, um die passende LED zu schalten.
+# Die Stichworte sind an die tatsächlichen Bezeichnungen im Oberursel-Kalender
+# angepasst (z.B. "Restabfall" statt "Restmüll", "Gelber Sack" statt "Gelbe Tonne").
 WASTE_KEYWORDS = {
-    "restm": "restmuell",
-    "gelbe": "gelber_sack",
-    "gelber": "gelber_sack",
+    "bioabfall": "bio",
+    "restabfall": "restmuell",
+    "gelber sack": "gelber_sack",
+    "leichtverpackungen": "gelber_sack",
     "papier": "papier",
-    "bio": "bio",
+    "schadstoffmobil": "schadstoff",
+    "weihnacht": "weihnachtsbaum",   # deckt "Weihnachtsbaum" UND "Weihnachtsbäume" ab
+    "grün": "gruenschnitt",
     "sperr": "sperrmuell",
-    "schadstoff": "schadstoff",
-    "weihnachtsbaum": "weihnachtsbaum",
 }
+
+
+PORTAL_ORIGIN = "https://buerger-portal-oberursel.azurewebsites.net"
+
+# Diese Header sind 1:1 aus einem funktionierenden Browser-Request übernommen
+# (Chrome DevTools -> Network -> Copy as cURL). Der entscheidende Header ist
+# "Accept: ... text/calendar" -- ohne den liefert der Server eine
+# PDF-Variante statt des echten ICS-Inhalts zurück.
+HEADERS = {
+    "Accept": "application/json, text/plain;q=0.5, text/calendar",
+    "Accept-Language": "de-DE,de;q=0.9,en;q=0.7",
+    "Content-Type": "application/x-www-form-urlencoded",
+    "Origin": PORTAL_ORIGIN,
+    "Referer": f"{PORTAL_ORIGIN}/calendar",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+}
+
+# Wird im Browser als einfaches, unkritisches Sprach-Cookie mitgeschickt.
+COOKIES = {"i18n_redirected": "de"}
 
 
 def build_url(year: int) -> str:
@@ -52,19 +84,131 @@ def build_url(year: int) -> str:
     )
 
 
+def _search_json_for_ics(obj) -> str | None:
+    """Sucht rekursiv in einer JSON-Struktur nach einem String, der ICS-Inhalt enthält."""
+    if isinstance(obj, str) and "BEGIN:VCALENDAR" in obj:
+        return obj
+    if isinstance(obj, dict):
+        for value in obj.values():
+            result = _search_json_for_ics(value)
+            if result:
+                return result
+    if isinstance(obj, list):
+        for item in obj:
+            result = _search_json_for_ics(item)
+            if result:
+                return result
+    return None
+
+
+def _find_json_key(obj, key: str):
+    """Sucht rekursiv in einer JSON-Struktur nach dem ersten Wert für 'key'."""
+    if isinstance(obj, dict):
+        if key in obj:
+            return obj[key]
+        for value in obj.values():
+            result = _find_json_key(value, key)
+            if result is not None:
+                return result
+    if isinstance(obj, list):
+        for item in obj:
+            result = _find_json_key(item, key)
+            if result is not None:
+                return result
+    return None
+
+
+def _decode_base64_ics(candidate: str) -> bytes | None:
+    """Dekodiert einen Base64-String und prüft, ob echter ICS-Inhalt rauskommt."""
+    try:
+        decoded = base64.b64decode(candidate)
+    except (ValueError, TypeError):
+        return None
+    if decoded.lstrip().startswith(b"BEGIN:VCALENDAR"):
+        return decoded
+    return None
+
+
+def extract_ics_content(raw: bytes, year: int) -> bytes | None:
+    """
+    Der Server liefert nicht immer reines ICS. Beobachtete Varianten:
+    - direkt reiner ICS-Text
+    - JSON-Hülle mit einem Feld "FileContents", das den ICS-Text Base64-kodiert enthält
+    - XML-Hülle mit einem <FileContents>-Element, ebenfalls Base64-kodiert
+    (Enthält "FileContents" stattdessen ein PDF, ist die Kalenderdatei für diesen
+    Abruf einfach nicht als ICS verfügbar -> wird als "nicht gefunden" behandelt.)
+    Gelingt keine der Varianten, wird die Rohantwort zur Fehlersuche in eine
+    Debug-Datei geschrieben.
+    """
+    text = raw.decode("utf-8", errors="replace")
+    stripped = text.lstrip()
+
+    # Fall 1: schon reines ICS
+    if stripped.startswith("BEGIN:VCALENDAR"):
+        return raw
+
+    # Fall 2: JSON-Hülle, z.B. {"d": {"ZeigeAbfallkalender": {"FileContents": "<base64>", ...}}}
+    try:
+        data = json.loads(text)
+        candidate = _find_json_key(data, "FileContents")
+        if isinstance(candidate, str):
+            decoded = _decode_base64_ics(candidate)
+            if decoded:
+                return decoded
+        # Falls der ICS-Text ausnahmsweise unkodiert irgendwo im JSON steckt
+        found = _search_json_for_ics(data)
+        if found:
+            return found.encode("utf-8")
+    except json.JSONDecodeError:
+        pass
+
+    # Fall 3: XML-Hülle, gleiches Prinzip: <FileContents>-Knoten suchen & dekodieren
+    if stripped.startswith("<"):
+        try:
+            root = ET.fromstring(text)
+            for elem in root.iter():
+                tag = elem.tag.split("}")[-1]  # Namespace-Präfix entfernen
+                if tag == "FileContents" and elem.text:
+                    decoded = _decode_base64_ics(elem.text.strip())
+                    if decoded:
+                        return decoded
+                if elem.text and "BEGIN:VCALENDAR" in elem.text:
+                    return elem.text.encode("utf-8")
+        except ET.ParseError:
+            pass
+
+    # Nichts gefunden -> Rohantwort zur Analyse speichern
+    debug_path = Path(__file__).resolve().parent / f"debug_response_{year}.txt"
+    debug_path.write_text(text, encoding="utf-8")
+    print(
+        f"Konnte keinen ICS-Inhalt in der Antwort für {year} finden "
+        f"(evtl. war die Antwort diesmal eine PDF-Variante). "
+        f"Rohantwort gespeichert unter: {debug_path}"
+    )
+    return None
+
+
 def fetch_ics(year: int) -> bytes | None:
     url = build_url(year)
     try:
-        resp = requests.get(url, timeout=20)
+        # POST mit leerem Body, genau wie im Browser (Content-Length: 0).
+        resp = requests.post(url, headers=HEADERS, cookies=COOKIES, data="", timeout=20)
         resp.raise_for_status()
-        return resp.content
+        return extract_ics_content(resp.content, year)
     except requests.RequestException as exc:
         print(f"Warnung: Abruf für Jahr {year} fehlgeschlagen ({exc})")
         return None
 
 
-def classify(summary: str) -> str:
+def classify(summary: str) -> str | None:
+    """Ordnet einen Kalendereintrag einer Tonnenart zu.
+
+    Gibt None zurück, wenn es sich um einen reinen Info-Eintrag handelt
+    (z.B. Feiertagshinweis), der nicht als Abholtermin zählen soll.
+    """
     lowered = summary.lower()
+    if any(keyword in lowered for keyword in IGNORE_KEYWORDS):
+        return None
     for keyword, code in WASTE_KEYWORDS.items():
         if keyword in lowered:
             return code
@@ -78,21 +222,27 @@ def collect_events_for(target_day: date, years_to_try: list[int]) -> list[str]:
         ics_bytes = fetch_ics(year)
         if ics_bytes is None:
             continue
-        cal = Calendar.from_ical(ics_bytes)
+        try:
+            cal = Calendar.from_ical(ics_bytes)
+        except ValueError as exc:
+            print(f"Warnung: ICS für Jahr {year} konnte nicht geparst werden ({exc})")
+            continue
         for component in cal.walk("VEVENT"):
             dtstart = component.get("dtstart").dt
             if isinstance(dtstart, datetime):
                 dtstart = dtstart.date()
             if dtstart == target_day:
                 summary = str(component.get("summary"))
-                found[classify(summary)] = summary
+                code = classify(summary)
+                if code is not None:
+                    found[code] = summary
     return sorted(found.keys())
 
 
 def main() -> None:
     now = datetime.now(TIMEZONE)
-    tomorrow = (now + timedelta(days=1)).date()
-
+    #tomorrow = (now + timedelta(days=1)).date()
+    tomorrow = date(2026, 1, 7)
     # Um den Jahreswechsel herum kann "morgen" schon im neuen Kalenderjahr
     # liegen, dessen ICS-Datei ggf. schon existiert -> beide Jahre probieren.
     years_to_try = sorted({tomorrow.year, now.year})
