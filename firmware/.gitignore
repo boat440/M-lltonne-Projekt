@@ -1,0 +1,5 @@
+# Enthält WLAN-Passwort & persönliche URL -> nicht committen.
+src/secrets.h
+
+# PlatformIO Build-Artefakte
+.pio/

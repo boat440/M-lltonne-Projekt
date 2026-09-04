@@ -5,13 +5,11 @@
 #include <ArduinoJson.h>
 
 // ---------------------------------------------------------------------------
-// Konfiguration – hier deine Werte eintragen
+// Konfiguration
 // ---------------------------------------------------------------------------
-const char *WIFI_SSID = "DEIN_WLAN_NAME";
-const char *WIFI_PASSWORD = "DEIN_WLAN_PASSWORT";
-
-// Wird nach dem Einrichten von GitHub Pages ersetzt, siehe README.
-const char *JSON_URL = "https://DEINUSERNAME.github.io/DEINREPO/abfall.json";
+// WLAN-Zugangsdaten & JSON_URL stehen NICHT hier, sondern in "secrets.h"
+// (Kopie von secrets.h.example, wird per .gitignore nicht eingecheckt).
+#include "secrets.h"
 
 // Beispiel-Verkabelung: eine LED pro Tonnenart.
 // Passe die Pins an deinen Aufbau an (Servos statt LEDs funktionieren

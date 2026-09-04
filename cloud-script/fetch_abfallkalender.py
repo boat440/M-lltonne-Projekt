@@ -241,8 +241,8 @@ def collect_events_for(target_day: date, years_to_try: list[int]) -> list[str]:
 
 def main() -> None:
     now = datetime.now(TIMEZONE)
-    #tomorrow = (now + timedelta(days=1)).date()
-    tomorrow = date(2026, 1, 7)
+    tomorrow = (now + timedelta(days=1)).date()
+    
     # Um den Jahreswechsel herum kann "morgen" schon im neuen Kalenderjahr
     # liegen, dessen ICS-Datei ggf. schon existiert -> beide Jahre probieren.
     years_to_try = sorted({tomorrow.year, now.year})
