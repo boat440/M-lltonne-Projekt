@@ -82,22 +82,29 @@ ins öffentliche GitHub-Repo.
 
    `secrets.h` wird per `.gitignore` nicht eingecheckt, damit dein
    WLAN-Passwort nicht im (öffentlichen) Repo landet.
-4. Passe bei Bedarf die Pin-Nummern (`PIN_RESTMUELL` usw.) an deine
-   tatsächliche Verkabelung an.
+4. Passe bei Bedarf `LED_PIN` (Datenleitung zum Panel) und `MATRIX_SERPENTINE`
+   (Verdrahtungsart des Panels) an deinen tatsächlichen Aufbau an.
 5. ESP32 per USB anschließen, dann in der PlatformIO-Seitenleiste (Alien-Icon
    links) auf **Upload** klicken (oder Tastenkürzel, PlatformIO zeigt es an).
-6. Serial Monitor öffnen (PlatformIO-Seitenleiste → **Monitor**), um die
-   Ausgaben (WLAN-Verbindung, abgerufenes JSON, evtl. Fehler) live zu sehen.
+6. Serial Monitor öffnen (PlatformIO-Seitenleiste → **Monitor**). Direkt nach
+   dem Start läuft ein **Selbsttest**: WLAN verbinden, Daten abrufen und die
+   nächste anzeigbare Tonnenart (auch wenn "morgen" nichts ansteht) für ein
+   paar Sekunden aufs Panel bringen. So lässt sich jederzeit prüfen, ob alles
+   ankommt – auch ohne fertig aufgebaute Hardware (reicht, das Panel
+   provisorisch auf einem Breadboard an `LED_PIN`/5V/GND anzuschließen) und
+   ohne auf die eigentlichen Anzeige-Fenster warten zu müssen.
 
 ## Funktionsweise im Überblick
 
 1. Ein GitHub-Actions-Job läuft täglich abends, ruft die Portal-API auf,
    bestimmt anhand der ICS-Daten, was **morgen** ansteht, und schreibt ein
-   kleines JSON (`docs/abfall.json`).
+   kleines JSON (`docs/abfall.json`) – inkl. des nächsten Termins mit einer
+   der 4 anzeigbaren Tonnenarten, auch falls das erst in einigen Tagen ist
+   (für den Firmware-Selbsttest, siehe Schritt 2.6).
 2. GitHub Pages liefert diese Datei über eine einfache, feste HTTPS-URL aus.
-3. Der ESP32 wacht regelmäßig aus dem Deep Sleep auf, holt sich per HTTPS
+3. Der ESP32 holt sich beim Start und danach täglich um 17:55 Uhr per HTTPS
    dieses JSON (kein ICS-Parsing, kein Session-Handling nötig – das erledigt
-   das Cloud-Skript), schaltet die passenden LEDs/Servos und schläft wieder.
+   das Cloud-Skript) und schaltet je nach Uhrzeit die passenden Panel-Farben.
 
 ## Wichtige Anpassungen für dein Setup
 
