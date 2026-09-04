@@ -47,6 +47,12 @@ if not all([ORTE_ID, STRASSEN_ID, HAUSNUMMER]):
 BASE_URL = "https://buerger-portal-oberursel.azurewebsites.net/api/ZeigeAbfallkalender"
 TIMEZONE = ZoneInfo("Europe/Berlin")
 
+# Nur diese 4 Codes kann das ESP32-Panel überhaupt anzeigen (siehe
+# WASTE_DISPLAYS in firmware/src/main.cpp). Wird für den Boot-Selbsttest der
+# Firmware gebraucht: dort soll immer die nächste anzeigbare Tonnenart
+# gezeigt werden, auch wenn "morgen" (date_for/types) nichts ansteht.
+DISPLAYABLE_CODES = {"restmuell", "papier", "bio", "gelber_sack"}
+
 # Diese Stichworte tauchen im Kalender auf, sind aber KEINE echten
 # Abholtermine, sondern nur Hinweise (z.B. Feiertag, Wertstoffhof
 # geschlossen) -> werden komplett ignoriert, statt als "sonstiges" gezählt.
@@ -233,9 +239,11 @@ def classify(summary: str) -> str | None:
     return "sonstiges"
 
 
-def collect_events_for(target_day: date, years_to_try: list[int]) -> list[str]:
-    """Sucht in den ICS-Dateien der gegebenen Jahre nach Terminen an target_day."""
-    found: dict[str, str] = {}
+def collect_all_events(years_to_try: list[int]) -> dict[date, set[str]]:
+    """Laedt die ICS-Dateien der gegebenen Jahre und sammelt ALLE Termine als
+    dict Datum -> Menge der an diesem Tag gefundenen Codes (nicht nur ein
+    einzelner Zieltag)."""
+    events_by_date: dict[date, set[str]] = {}
     for year in years_to_try:
         ics_bytes = fetch_ics(year)
         if ics_bytes is None:
@@ -249,28 +257,47 @@ def collect_events_for(target_day: date, years_to_try: list[int]) -> list[str]:
             dtstart = component.get("dtstart").dt
             if isinstance(dtstart, datetime):
                 dtstart = dtstart.date()
-            if dtstart == target_day:
-                summary = str(component.get("summary"))
-                code = classify(summary)
-                if code is not None:
-                    found[code] = summary
-    return sorted(found.keys())
+            summary = str(component.get("summary"))
+            code = classify(summary)
+            if code is not None:
+                events_by_date.setdefault(dtstart, set()).add(code)
+    return events_by_date
+
+
+def find_next_displayable(events_by_date: dict[date, set[str]], start_day: date) -> tuple[date | None, list[str]]:
+    """Sucht ab (einschließlich) start_day den nächsten Tag, an dem mindestens
+    eine der 4 auf dem Panel anzeigbaren Tonnenarten ansteht -- fuer den
+    Boot-Selbsttest der Firmware, damit der auch dann etwas Sinnvolles zeigt,
+    wenn "morgen" gerade nichts ansteht."""
+    for day in sorted(d for d in events_by_date if d >= start_day):
+        displayable = sorted(events_by_date[day] & DISPLAYABLE_CODES)
+        if displayable:
+            return day, displayable
+    return None, []
 
 
 def main() -> None:
     now = datetime.now(TIMEZONE)
     tomorrow = (now + timedelta(days=1)).date()
-    
+
     # Um den Jahreswechsel herum kann "morgen" schon im neuen Kalenderjahr
     # liegen, dessen ICS-Datei ggf. schon existiert -> beide Jahre probieren.
     years_to_try = sorted({tomorrow.year, now.year})
 
-    types = collect_events_for(tomorrow, years_to_try)
+    events_by_date = collect_all_events(years_to_try)
+
+    types = sorted(events_by_date.get(tomorrow, set()))
+    next_date, next_types = find_next_displayable(events_by_date, tomorrow)
 
     payload = {
         "generated_at": now.isoformat(timespec="seconds"),
         "date_for": tomorrow.isoformat(),
         "types": types,
+        # Fuer den Boot-Selbsttest der Firmware: naechster Termin, an dem
+        # mindestens eine der 4 anzeigbaren Tonnenarten ansteht (kann auch
+        # tomorrow selbst sein, oder Wochen spaeter liegen).
+        "next_pickup_date": next_date.isoformat() if next_date else None,
+        "next_types": next_types,
     }
 
     out_path = Path(__file__).resolve().parent.parent / "docs" / "abfall.json"
