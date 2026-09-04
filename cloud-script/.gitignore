@@ -1,0 +1,6 @@
+# Enthaelt die Adresse -- nicht committen.
+local_config.py
+
+# Debug-Ausgabe, kann rohe Server-Antworten (inkl. Adresse) enthalten --
+# nie committen, wird nur bei Parse-Fehlern lokal zur Fehlersuche erzeugt.
+debug_response_*.txt

@@ -1,0 +1,10 @@
+# Kopiere diese Datei zu "local_config.py" (gleicher Ordner) und trage dort
+# deine echten Werte ein. "local_config.py" wird per .gitignore NICHT
+# committet, damit deine Adresse nicht im (oeffentlichen) Repo landet.
+#
+# Die Werte stehen in der URL, die du im Netzwerk-Tab deines Browsers
+# gesehen hast (orteId, strassenId, hausNr).
+
+ORTE_ID = "DEINE_ORTE_ID"
+STRASSEN_ID = "DEINE_STRASSEN_ID"
+HAUSNUMMER = "DEINE_HAUSNUMMER"

@@ -10,6 +10,8 @@ Läuft automatisiert über den GitHub-Actions-Workflow (siehe .github/workflows)
 
 import base64
 import json
+import os
+import sys
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -19,12 +21,28 @@ from zoneinfo import ZoneInfo
 import requests
 from icalendar import Calendar
 
-# --- Konfiguration: hier deine Adressdaten eintragen -----------------------
-# Diese Werte stehen in der URL, die du im Netzwerk-Tab deines Browsers
-# gesehen hast (orteId, strassenId, hausNr).
-ORTE_ID = "REDACTED"
-STRASSEN_ID = "REDACTED"
-HAUSNUMMER = "REDACTED"
+# --- Konfiguration: Adressdaten -------------------------------------------
+# ORTE_ID/STRASSEN_ID/HAUSNUMMER stehen NICHT im Code (das waere im
+# oeffentlichen Repo einsehbar und wuerde die Adresse verraten -- jede:r
+# koennte damit dieselbe Abfrage beim Portal stellen).
+#
+# - Lokal: cloud-script/local_config.py anlegen (siehe
+#   local_config.py.example), wird per .gitignore nicht committet.
+# - In GitHub Actions: als Repository Secrets hinterlegt und vom Workflow
+#   als Umgebungsvariablen hereingereicht (siehe README).
+try:
+    from local_config import ORTE_ID, STRASSEN_ID, HAUSNUMMER  # type: ignore
+except ImportError:
+    ORTE_ID = os.environ.get("ORTE_ID")
+    STRASSEN_ID = os.environ.get("STRASSEN_ID")
+    HAUSNUMMER = os.environ.get("HAUSNUMMER")
+
+if not all([ORTE_ID, STRASSEN_ID, HAUSNUMMER]):
+    sys.exit(
+        "Fehlende Adressdaten: ORTE_ID/STRASSEN_ID/HAUSNUMMER sind nicht gesetzt.\n"
+        "Lokal: cloud-script/local_config.py aus local_config.py.example erstellen.\n"
+        "GitHub Actions: Repository Secrets ORTE_ID/STRASSEN_ID/HAUSNUMMER anlegen (siehe README)."
+    )
 
 BASE_URL = "https://buerger-portal-oberursel.azurewebsites.net/api/ZeigeAbfallkalender"
 TIMEZONE = ZoneInfo("Europe/Berlin")
