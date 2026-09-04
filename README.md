@@ -51,9 +51,13 @@ separate VS-Code-Fenster/Ordner öffnen kannst:
    nach "PlatformIO IDE" suchen → installieren). VS Code startet danach neu.
 2. Öffne **nur den Ordner `firmware/`** als eigenständigen Workspace in VS Code
    (`File → Open Folder…`). PlatformIO erkennt automatisch die `platformio.ini`.
-3. Öffne `firmware/src/main.cpp` und trage oben ein:
+3. Kopiere `firmware/src/secrets.h.example` zu `firmware/src/secrets.h` und
+   trage dort ein:
    - `WIFI_SSID`, `WIFI_PASSWORD`
    - `JSON_URL` (die GitHub-Pages-URL aus Schritt 1.3)
+
+   `secrets.h` wird per `.gitignore` nicht eingecheckt, damit dein
+   WLAN-Passwort nicht im (öffentlichen) Repo landet.
 4. Passe bei Bedarf die Pin-Nummern (`PIN_RESTMUELL` usw.) an deine
    tatsächliche Verkabelung an.
 5. ESP32 per USB anschließen, dann in der PlatformIO-Seitenleiste (Alien-Icon
