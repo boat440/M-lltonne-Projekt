@@ -1,7 +1,9 @@
 {
-  "generated_at": "2026-09-12T20:02:12+02:00",
-  "date_for": "2026-09-13",
-  "types": [],
+  "generated_at": "2026-09-13T20:29:04+02:00",
+  "date_for": "2026-09-14",
+  "types": [
+    "papier"
+  ],
   "next_pickup_date": "2026-09-14",
   "next_types": [
     "papier"
