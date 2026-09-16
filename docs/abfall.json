@@ -1,12 +1,11 @@
 {
-  "generated_at": "2026-09-15T21:27:45+02:00",
-  "date_for": "2026-09-16",
+  "generated_at": "2026-09-16T21:21:26+02:00",
+  "date_for": "2026-09-17",
   "types": [
-    "bio",
     "gruenschnitt"
   ],
-  "next_pickup_date": "2026-09-16",
+  "next_pickup_date": "2026-09-24",
   "next_types": [
-    "bio"
+    "restmuell"
   ]
 }
