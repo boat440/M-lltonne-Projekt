@@ -1,7 +1,8 @@
 {
-  "generated_at": "2026-09-27T21:28:02+02:00",
-  "date_for": "2026-09-28",
+  "generated_at": "2026-09-28T23:32:03+02:00",
+  "date_for": "2026-09-29",
   "types": [
+    "gelber_sack",
     "gruenschnitt"
   ],
   "next_pickup_date": "2026-09-29",
