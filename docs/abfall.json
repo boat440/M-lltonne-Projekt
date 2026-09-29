@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-28T23:32:03+02:00",
-  "date_for": "2026-09-29",
+  "generated_at": "2026-09-29T22:24:10+02:00",
+  "date_for": "2026-09-30",
   "types": [
-    "gelber_sack",
+    "bio",
     "gruenschnitt"
   ],
-  "next_pickup_date": "2026-09-29",
+  "next_pickup_date": "2026-09-30",
   "next_types": [
-    "gelber_sack"
+    "bio"
   ]
 }
