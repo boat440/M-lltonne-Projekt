@@ -1,12 +1,11 @@
 {
-  "generated_at": "2026-10-06T22:44:40+02:00",
-  "date_for": "2026-10-07",
+  "generated_at": "2026-10-07T22:57:10+02:00",
+  "date_for": "2026-10-08",
   "types": [
-    "gruenschnitt",
-    "restmuell"
+    "gruenschnitt"
   ],
-  "next_pickup_date": "2026-10-07",
+  "next_pickup_date": "2026-10-12",
   "next_types": [
-    "restmuell"
+    "papier"
   ]
 }
