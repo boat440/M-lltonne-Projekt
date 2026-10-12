@@ -1,13 +1,12 @@
 {
-  "generated_at": "2026-10-11T21:52:45+02:00",
-  "date_for": "2026-10-12",
+  "generated_at": "2026-10-13T00:41:56+02:00",
+  "date_for": "2026-10-14",
   "types": [
-    "gruenschnitt",
-    "papier",
-    "schadstoff"
+    "bio",
+    "gruenschnitt"
   ],
-  "next_pickup_date": "2026-10-12",
+  "next_pickup_date": "2026-10-14",
   "next_types": [
-    "papier"
+    "bio"
   ]
 }
