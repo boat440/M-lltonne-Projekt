@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-10-19T22:50:37+02:00",
-  "date_for": "2026-10-20",
+  "generated_at": "2026-10-20T21:47:50+02:00",
+  "date_for": "2026-10-21",
   "types": [
-    "gruenschnitt"
+    "restmuell",
+    "schadstoff"
   ],
   "next_pickup_date": "2026-10-21",
   "next_types": [
