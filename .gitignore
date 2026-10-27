@@ -5,3 +5,6 @@ firmware/
 # Python-Cache
 __pycache__/
 *.pyc
+
+# 3D-Modelle (Gehaeuse etc.) nur lokal
+3D Modelle/
