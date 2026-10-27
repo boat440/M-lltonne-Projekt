@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-10-26T21:50:58+01:00",
-  "date_for": "2026-10-27",
+  "generated_at": "2026-10-27T16:43:01+01:00",
+  "date_for": "2026-10-28",
   "types": [
-    "gelber_sack"
+    "bio"
   ],
-  "next_pickup_date": "2026-10-27",
+  "next_pickup_date": "2026-10-28",
   "next_types": [
-    "gelber_sack"
+    "bio"
   ]
 }
