@@ -96,7 +96,7 @@ ins öffentliche GitHub-Repo.
 
 ## Funktionsweise im Überblick
 
-1. Ein GitHub-Actions-Job läuft täglich abends, ruft die Portal-API auf,
+1. Ein GitHub-Actions-Job läuft täglich vormittags, ruft die Portal-API auf,
    bestimmt anhand der ICS-Daten, was **morgen** ansteht, und schreibt ein
    kleines JSON (`docs/abfall.json`) – inkl. des nächsten Termins mit einer
    der 4 anzeigbaren Tonnenarten, auch falls das erst in einigen Tagen ist
