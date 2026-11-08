@@ -53,6 +53,11 @@ TIMEZONE = ZoneInfo("Europe/Berlin")
 # gezeigt werden, auch wenn "morgen" (date_for/types) nichts ansteht.
 DISPLAYABLE_CODES = {"restmuell", "papier", "bio", "gelber_sack"}
 
+# Wie viele Tage ab heute die Terminliste "upcoming" im JSON abdeckt. Die
+# Firmware sucht sich daraus selbst den passenden Tag; der Puffer überbrückt
+# auch mal ausgefallene Workflow-Läufe.
+UPCOMING_DAYS = 14
+
 # Diese Stichworte tauchen im Kalender auf, sind aber KEINE echten
 # Abholtermine, sondern nur Hinweise (z.B. Feiertag, Wertstoffhof
 # geschlossen) -> werden komplett ignoriert, statt als "sonstiges" gezählt.
@@ -276,13 +281,27 @@ def find_next_displayable(events_by_date: dict[date, set[str]], start_day: date)
     return None, []
 
 
+def build_upcoming(events_by_date: dict[date, set[str]], start_day: date) -> list[dict]:
+    """Listet alle Tage von start_day bis UPCOMING_DAYS Tage später auf, an
+    denen eine der 4 anzeigbaren Tonnenarten ansteht. Die Liste beginnt bewusst
+    schon heute, weil die Firmware vormittags die Tonne des laufenden Tages zeigt."""
+    upcoming = []
+    for offset in range(UPCOMING_DAYS + 1):
+        day = start_day + timedelta(days=offset)
+        displayable = sorted(events_by_date.get(day, set()) & DISPLAYABLE_CODES)
+        if displayable:
+            upcoming.append({"date": day.isoformat(), "types": displayable})
+    return upcoming
+
+
 def main() -> None:
     now = datetime.now(TIMEZONE)
     tomorrow = (now + timedelta(days=1)).date()
 
-    # Um den Jahreswechsel herum kann "morgen" schon im neuen Kalenderjahr
-    # liegen, dessen ICS-Datei ggf. schon existiert -> beide Jahre probieren.
-    years_to_try = sorted({tomorrow.year, now.year})
+    # Um den Jahreswechsel herum kann die Terminliste schon ins neue
+    # Kalenderjahr reichen, dessen ICS-Datei ggf. schon existiert -> beide
+    # Jahre probieren.
+    years_to_try = sorted({now.year, (now + timedelta(days=UPCOMING_DAYS)).year})
 
     events_by_date = collect_all_events(years_to_try)
 
@@ -298,6 +317,9 @@ def main() -> None:
         # tomorrow selbst sein, oder Wochen spaeter liegen).
         "next_pickup_date": next_date.isoformat() if next_date else None,
         "next_types": next_types,
+        # Fuer die normale Anzeige der Firmware: alle Termine der naechsten
+        # Tage, damit die Anzeige nicht vom Zeitpunkt des Abrufs abhaengt.
+        "upcoming": build_upcoming(events_by_date, now.date()),
     }
 
     out_path = Path(__file__).resolve().parent.parent / "docs" / "abfall.json"

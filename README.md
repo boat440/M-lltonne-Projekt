@@ -104,7 +104,9 @@ ins öffentliche GitHub-Repo.
 2. GitHub Pages liefert diese Datei über eine einfache, feste HTTPS-URL aus.
 3. Der ESP32 holt sich beim Start und danach täglich um 17:55 Uhr per HTTPS
    dieses JSON (kein ICS-Parsing, kein Session-Handling nötig – das erledigt
-   das Cloud-Skript) und schaltet je nach Uhrzeit die passenden Panel-Farben.
+   das Cloud-Skript). Aus der enthaltenen Terminliste (`upcoming`) wählt er je
+   nach Datum und Uhrzeit die passenden Panel-Farben: abends die Tonne von
+   morgen, vormittags die von heute.
 
 ## Wichtige Anpassungen für dein Setup
 
