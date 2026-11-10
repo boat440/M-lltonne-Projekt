@@ -1,20 +1,14 @@
 {
-  "generated_at": "2026-11-09T20:26:08+01:00",
-  "date_for": "2026-11-10",
+  "generated_at": "2026-11-10T14:07:56+01:00",
+  "date_for": "2026-11-11",
   "types": [
-    "gelber_sack"
+    "bio"
   ],
-  "next_pickup_date": "2026-11-10",
+  "next_pickup_date": "2026-11-11",
   "next_types": [
-    "gelber_sack"
+    "bio"
   ],
   "upcoming": [
-    {
-      "date": "2026-11-09",
-      "types": [
-        "papier"
-      ]
-    },
     {
       "date": "2026-11-10",
       "types": [
@@ -31,6 +25,12 @@
       "date": "2026-11-18",
       "types": [
         "restmuell"
+      ]
+    },
+    {
+      "date": "2026-11-24",
+      "types": [
+        "gelber_sack"
       ]
     }
   ]
