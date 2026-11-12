@@ -1,18 +1,12 @@
 {
-  "generated_at": "2026-11-11T17:51:02+01:00",
-  "date_for": "2026-11-12",
+  "generated_at": "2026-11-12T14:26:35+01:00",
+  "date_for": "2026-11-13",
   "types": [],
   "next_pickup_date": "2026-11-18",
   "next_types": [
     "restmuell"
   ],
   "upcoming": [
-    {
-      "date": "2026-11-11",
-      "types": [
-        "bio"
-      ]
-    },
     {
       "date": "2026-11-18",
       "types": [
