@@ -1,13 +1,10 @@
 {
-  "generated_at": "2026-11-17T19:04:08+01:00",
-  "date_for": "2026-11-18",
-  "types": [
-    "restmuell",
-    "schadstoff"
-  ],
-  "next_pickup_date": "2026-11-18",
+  "generated_at": "2026-11-18T14:33:43+01:00",
+  "date_for": "2026-11-19",
+  "types": [],
+  "next_pickup_date": "2026-11-24",
   "next_types": [
-    "restmuell"
+    "gelber_sack"
   ],
   "upcoming": [
     {
@@ -26,6 +23,12 @@
       "date": "2026-11-25",
       "types": [
         "bio"
+      ]
+    },
+    {
+      "date": "2026-12-02",
+      "types": [
+        "restmuell"
       ]
     }
   ]
