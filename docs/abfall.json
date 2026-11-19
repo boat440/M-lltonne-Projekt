@@ -1,18 +1,12 @@
 {
-  "generated_at": "2026-11-18T18:44:28+01:00",
-  "date_for": "2026-11-19",
+  "generated_at": "2026-11-19T15:00:10+01:00",
+  "date_for": "2026-11-20",
   "types": [],
   "next_pickup_date": "2026-11-24",
   "next_types": [
     "gelber_sack"
   ],
   "upcoming": [
-    {
-      "date": "2026-11-18",
-      "types": [
-        "restmuell"
-      ]
-    },
     {
       "date": "2026-11-24",
       "types": [
