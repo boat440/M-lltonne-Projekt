@@ -1,7 +1,9 @@
 {
-  "generated_at": "2026-11-22T17:50:37+01:00",
-  "date_for": "2026-11-23",
-  "types": [],
+  "generated_at": "2026-11-23T16:30:24+01:00",
+  "date_for": "2026-11-24",
+  "types": [
+    "gelber_sack"
+  ],
   "next_pickup_date": "2026-11-24",
   "next_types": [
     "gelber_sack"
@@ -23,6 +25,12 @@
       "date": "2026-12-02",
       "types": [
         "restmuell"
+      ]
+    },
+    {
+      "date": "2026-12-07",
+      "types": [
+        "papier"
       ]
     }
   ]
